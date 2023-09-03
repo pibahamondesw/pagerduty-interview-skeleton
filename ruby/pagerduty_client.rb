@@ -11,8 +11,8 @@ class PagerdutyClient
   PD_TOKEN = ENV.fetch('PD_TOKEN', 'y_NbAkKc66ryYTWUXYEu')
 
   class << self
-    def get_users(limit, offset, include_models = [], query = nil, team_ids = [], retries = 3)
-      params = { limit: limit, offset: offset }
+    def get_users(limit, offset, include_models = [], query = nil, team_ids = [], retries = 3, total: false)
+      params = { limit: limit, offset: offset, total: total }
       include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
       params.merge({ include: include_models }) if include_models.any?
       params.merge({ query: query }) unless query.nil?
