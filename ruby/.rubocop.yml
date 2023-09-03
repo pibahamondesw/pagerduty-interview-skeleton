@@ -1,0 +1,4 @@
+Metrics/MethodLength:
+  Max: 30
+Metrics/ParameterLists:
+  Enabled: false
