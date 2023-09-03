@@ -17,11 +17,14 @@ class PagerdutyClient
       params.merge({ include: include_models }) if include_models.any?
       params.merge({ query: query }) unless query.nil?
       params.merge({ team_ids: team_ids }) if team_ids.any?
-      response = http_get('users', params)
 
-      return response if response['status'] != 200
+      while retries.positive?
+        response = http_get('users', params)
+        return response if response['status'] != 200
 
-      return get_users(limit, offset, include_models, query, team_ids, retries - 1) if retries.positive?
+        retries -= 1
+        sleep(1)
+      end
 
       raise 'Error while trying to get users'
     end
