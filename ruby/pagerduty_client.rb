@@ -11,6 +11,36 @@ class PagerdutyClient
   PD_TOKEN = ENV.fetch('PD_TOKEN', 'y_NbAkKc66ryYTWUXYEu')
 
   class << self
+    def get_users(limit, offset, include_models = [], query = nil, team_ids = [], retries = 3)
+      params = { limit: limit, offset: offset }
+      include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
+      params.merge({ include: include_models }) if include_models.any?
+      params.merge({ query: query }) unless query.nil?
+      params.merge({ team_ids: team_ids }) if team_ids.any?
+      response = http_get('users', params)
+
+      return response if response['status'] != 200
+
+      return get_users(limit, offset, include_models, query, team_ids, retries - 1) if retries.positive?
+
+      raise 'Error while trying to get users'
+    end
+
+    def all_users(batch_size = 25)
+      more = true
+      offset = 0
+      users = []
+
+      while more
+        response = get_users(batch_size, offset)
+        parsed_body = json_to_map(response.body)
+        users += parsed_body['users']
+        more = parsed_body['more']
+        offset += batch_size
+      end
+      users
+    end
+
     def http_get(endpoint, params = nil)
       url = "#{BASE_URL}/#{endpoint}"
       authorization = "Token token=#{PD_TOKEN}"
@@ -36,3 +66,10 @@ class PagerdutyClient
     end
   end
 end
+
+# Usage examples
+
+# USERS
+users = PagerdutyClient.all_users
+puts users.size
+puts(users.map { |u| u['name'] })
