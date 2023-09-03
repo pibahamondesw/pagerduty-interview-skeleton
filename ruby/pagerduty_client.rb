@@ -41,6 +41,8 @@ class PagerdutyClient
       users
     end
 
+    private
+
     def http_get(endpoint, params = nil)
       url = "#{BASE_URL}/#{endpoint}"
       authorization = "Token token=#{PD_TOKEN}"
@@ -58,8 +60,6 @@ class PagerdutyClient
     def input_line
       $stdin.gets.chomp
     end
-
-    private
 
     def log(info)
       puts info if DEBUG
