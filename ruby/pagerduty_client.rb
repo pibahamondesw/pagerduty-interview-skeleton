@@ -11,6 +11,13 @@ class PagerdutyClient
   PD_TOKEN = ENV.fetch('PD_TOKEN', 'y_NbAkKc66ryYTWUXYEu')
 
   class << self
+    def get_user(id, include_models = [])
+      params = {}
+      include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
+      params.merge({ include: include_models }) if include_models.any?
+      http_get("users/#{id}", params)
+    end
+
     def get_users(limit = 25, offset = 0, include_models = [], query = nil, team_ids = [], total: false)
       params = { limit: limit, offset: offset, total: total }
       include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
@@ -93,6 +100,10 @@ end
 users = PagerdutyClient.all_users
 puts users.size
 puts(users.map { |u| u['name'] })
+
+single_user = PagerdutyClient.get_user('PLOASXQ')
+single_user = JSON.parse(single_user.body)
+puts(single_user.dig('user', 'name'))
 
 # ESCALATION POLICIES
 eps = PagerdutyClient.all_escalation_policies
