@@ -70,12 +70,8 @@ class PagerdutyClient
       log "Sending 'GET' request to URL : #{url}"
       response = HTTPClient.http_get(url, authorization, params)
       log "Response Code : #{response.code}"
-      log JSON.pretty_generate(json_to_map(response.body))
+      log JSON.pretty_generate(JSON.parse(response.body))
       response
-    end
-
-    def json_to_map(json_string)
-      JSON.parse(json_string)
     end
 
     def input_line
