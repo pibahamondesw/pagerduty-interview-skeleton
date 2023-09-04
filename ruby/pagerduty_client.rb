@@ -56,6 +56,37 @@ class PagerdutyClient
       get_until_exhaustion(:get_extension_schemas, 'extension_schemas', batch_size, *args, **kwargs)
     end
 
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+    def get_incidents(limit = 100, offset = 0, date_range = nil, include_models = [], service_ids = [],
+                      since_date = nil, sort_by = [], statuses = [], time_zone = 'America/Santiago', until_date = nil,
+                      urgencies = [], user_ids = [], total: false)
+      params = { limit: limit, offset: offset, total: total, time_zone: time_zone }
+      if date_range.eql?('all')
+        params.merge({ date_range: date_range })
+      else
+        params.merge({ since: since_date }) unless since_date.nil?
+        params.merge({ until: until_date }) unless until_date.nil?
+      end
+      include_models = include_models.select do |x|
+        x.in? %w[acknowledgers agents assignees conference_bridge escalation_policies first_trigger_log_entries
+                 priorities services teams users]
+      end
+      params.merge({ include: include_models }) if include_models.any?
+      params.merge({ service_ids: service_ids }) if service_ids.any?
+      params.merge({ sort_by: sort_by.slice(0, 1) }) if sort_by.any?
+      statuses = statuses.select { |x| x.in? %w[triggered acknowledged resolved] }
+      params.merge({ statuses: statuses }) if statuses.any?
+      urgencies = urgencies.select { |x| x.in? %w[high low] }
+      params.merge({ urgencies: urgencies }) if urgencies.any?
+      params.merge({ user_ids: user_ids }) if user_ids.any?
+      http_get('incidents', params)
+    end
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+    def all_incidents(batch_size = 25, *args, **kwargs)
+      get_until_exhaustion(:get_incidents, 'incidents', batch_size, *args, **kwargs)
+    end
+
     private
 
     def http_get(endpoint, params = nil)
@@ -114,3 +145,8 @@ puts(eps.map { |u| u['name'] })
 ess = PagerdutyClient.all_extension_schemas
 puts ess.size
 puts(ess.map { |u| u['label'] })
+
+# INCIDENTS
+incidents = PagerdutyClient.all_incidents
+puts incidents.size
+puts(incidents.map { |i| i['title'] })
