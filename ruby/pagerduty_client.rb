@@ -21,18 +21,7 @@ class PagerdutyClient
     end
 
     def all_users(batch_size = 25)
-      more = true
-      offset = 0
-      users = []
-
-      while more
-        response = get_users(batch_size, offset)
-        users_batch = json_to_map(response.body)
-        users += users_batch['users']
-        more = users_batch['more']
-        offset += batch_size
-      end
-      users
+      get_until_exhaustion(:get_users, 'users', batch_size)
     end
 
     def get_escalation_policies(limit = 100, offset = 0, include_models = [], query = nil, sort_by = nil,
@@ -48,18 +37,7 @@ class PagerdutyClient
     end
 
     def all_escalation_policies(batch_size = 25)
-      more = true
-      offset = 0
-      escalation_policies = []
-
-      while more
-        response = get_escalation_policies(batch_size, offset)
-        escalation_policies_batch = json_to_map(response.body)
-        escalation_policies += escalation_policies_batch['escalation_policies']
-        more = escalation_policies_batch['more']
-        offset += batch_size
-      end
-      escalation_policies
+      get_until_exhaustion(:get_escalation_policies, 'escalation_policies', batch_size)
     end
 
     private
@@ -80,6 +58,22 @@ class PagerdutyClient
 
     def log(info)
       puts info if DEBUG
+    end
+
+    def get_until_exhaustion(func, items_key, batch_size = 25)
+      more = true
+      offset = 0
+      items = []
+
+      while more
+        response = method(func).call(batch_size, offset)
+        items_batch = JSON.parse(response.body)
+        items += items_batch[items_key]
+        more = items_batch['more']
+        offset += batch_size
+      end
+
+      items
     end
   end
 end
