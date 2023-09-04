@@ -35,6 +35,33 @@ class PagerdutyClient
       users
     end
 
+    def get_escalation_policies(limit = 100, offset = 0, include_models = [], query = nil, sort_by = nil,
+                                team_ids = [], user_ids = [], total: false)
+      params = { limit: limit, offset: offset, total: total }
+      include_models = include_models.select { |x| x.in? %w[services teams targets] }
+      params.merge({ include: include_models }) if include_models.any?
+      params.merge({ query: query }) unless query.nil?
+      params.merge({ sort_by: sort_by }) unless sort_by.nil?
+      params.merge({ team_ids: team_ids }) if team_ids.any?
+      params.merge({ user_ids: user_ids }) if user_ids.any?
+      http_get('escalation_policies', params)
+    end
+
+    def all_escalation_policies(batch_size = 25)
+      more = true
+      offset = 0
+      escalation_policies = []
+
+      while more
+        response = get_escalation_policies(batch_size, offset)
+        escalation_policies_batch = json_to_map(response.body)
+        escalation_policies += escalation_policies_batch['escalation_policies']
+        more = escalation_policies_batch['more']
+        offset += batch_size
+      end
+      escalation_policies
+    end
+
     private
 
     def http_get(endpoint, params = nil)
@@ -67,3 +94,8 @@ end
 users = PagerdutyClient.all_users
 puts users.size
 puts(users.map { |u| u['name'] })
+
+# ESCALATION POLICIES
+eps = PagerdutyClient.all_escalation_policies
+puts eps.size
+puts(eps.map { |u| u['name'] })
