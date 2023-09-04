@@ -20,7 +20,7 @@ class PagerdutyClient
 
       while retries.positive?
         response = http_get('users', params)
-        return response if response['status'] != 200
+        return response if response.code == 200
 
         retries -= 1
         sleep(1)
