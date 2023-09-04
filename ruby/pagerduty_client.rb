@@ -11,7 +11,7 @@ class PagerdutyClient
   PD_TOKEN = ENV.fetch('PD_TOKEN', 'y_NbAkKc66ryYTWUXYEu')
 
   class << self
-    def get_users(limit, offset, include_models = [], query = nil, team_ids = [], total: false)
+    def get_users(limit = 25, offset = 0, include_models = [], query = nil, team_ids = [], total: false)
       params = { limit: limit, offset: offset, total: total }
       include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
       params.merge({ include: include_models }) if include_models.any?
@@ -38,6 +38,15 @@ class PagerdutyClient
 
     def all_escalation_policies(batch_size = 25, *args, **kwargs)
       get_until_exhaustion(:get_escalation_policies, 'escalation_policies', batch_size, *args, **kwargs)
+    end
+
+    def get_extension_schemas(limit = 100, offset = 0, total: false)
+      params = { limit: limit, offset: offset, total: total }
+      http_get('extension_schemas', params)
+    end
+
+    def all_extension_schemas(batch_size = 25, *args, **kwargs)
+      get_until_exhaustion(:get_extension_schemas, 'extension_schemas', batch_size, *args, **kwargs)
     end
 
     private
@@ -89,3 +98,8 @@ puts(users.map { |u| u['name'] })
 eps = PagerdutyClient.all_escalation_policies
 puts eps.size
 puts(eps.map { |u| u['name'] })
+
+# EXTENSION SCHEMAS
+ess = PagerdutyClient.all_extension_schemas
+puts ess.size
+puts(ess.map { |u| u['label'] })
