@@ -11,22 +11,13 @@ class PagerdutyClient
   PD_TOKEN = ENV.fetch('PD_TOKEN', 'y_NbAkKc66ryYTWUXYEu')
 
   class << self
-    def get_users(limit, offset, include_models = [], query = nil, team_ids = [], retries = 3, total: false)
+    def get_users(limit, offset, include_models = [], query = nil, team_ids = [], total: false)
       params = { limit: limit, offset: offset, total: total }
       include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
       params.merge({ include: include_models }) if include_models.any?
       params.merge({ query: query }) unless query.nil?
       params.merge({ team_ids: team_ids }) if team_ids.any?
-
-      while retries.positive?
-        response = http_get('users', params)
-        return response if response.code == 200
-
-        retries -= 1
-        sleep(1)
-      end
-
-      raise 'Error while trying to get users'
+      http_get('users', params)
     end
 
     def all_users(batch_size = 25)
@@ -36,9 +27,9 @@ class PagerdutyClient
 
       while more
         response = get_users(batch_size, offset)
-        parsed_body = json_to_map(response.body)
-        users += parsed_body['users']
-        more = parsed_body['more']
+        users_batch = json_to_map(response.body)
+        users += users_batch['users']
+        more = users_batch['more']
         offset += batch_size
       end
       users
