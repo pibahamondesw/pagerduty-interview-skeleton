@@ -99,10 +99,6 @@ class PagerdutyClient
       response
     end
 
-    def input_line
-      $stdin.gets.chomp
-    end
-
     def log(info)
       puts info if DEBUG
     end

@@ -6,3 +6,7 @@ def valid_number?(string, limit)
 rescue ArgumentError
   false
 end
+
+def input_line
+  $stdin.gets.chomp
+end
