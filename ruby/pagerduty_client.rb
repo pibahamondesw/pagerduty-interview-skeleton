@@ -126,28 +126,57 @@ class PagerdutyClient
   end
 end
 
-# Usage examples
+offset = 0
+limit = 10
 
-# USERS
-users = PagerdutyClient.all_users
-puts users.size
-puts(users.map { |u| u['name'] })
+loop do
+  users = PagerdutyClient.get_users(limit, offset, total: true)
+  users = JSON.parse(users.body)
+  total_users = users['total']
+  fetched_users = users['users'].size
+  puts "Showing #{fetched_users} users out of #{total_users}"
 
-single_user = PagerdutyClient.get_user('PLOASXQ')
-single_user = JSON.parse(single_user.body)
-puts(single_user.dig('user', 'name'))
+  idx = 0
 
-# ESCALATION POLICIES
-eps = PagerdutyClient.all_escalation_policies
-puts eps.size
-puts(eps.map { |u| u['name'] })
+  users['users'].each do |user|
+    puts "#{idx}: #{user['name']}"
+    idx += 1
+  end
 
-# EXTENSION SCHEMAS
-ess = PagerdutyClient.all_extension_schemas
-puts ess.size
-puts(ess.map { |u| u['label'] })
+  puts "\nSelect an option:"
+  puts "P: Show previous #{limit}" if offset.positive?
+  puts "N: Show next #{limit}" if offset + fetched_users < total_users
+  puts "0-#{fetched_users}: Select user"
+  puts 'X: Close'
 
-# INCIDENTS
-incidents = PagerdutyClient.all_incidents
-puts incidents.size
-puts(incidents.map { |i| i['title'] })
+  input_text = input_line
+
+  if input_text.eql?('N')
+    offset += limit
+    next
+  elsif input_text.eql?('P')
+    offset -= limit
+    next
+  elsif valid_number?(input_text, limit)
+    n = Integer(input_text)
+    user_id = users['users'][n]['id']
+    user = PagerdutyClient.get_user(user_id, ['contact_methods'])
+    user = JSON.parse(user.body)['user']
+    puts "#{user['name']}\n"
+    user['contact_methods'].each do |contact_method|
+      case contact_method['type']
+      when 'email_contact_method'
+        puts "Email (#{contact_method['label']})"
+      when 'sms_contact_method'
+        puts "SMS (#{contact_method['label']})"
+      when 'phone_contact_method'
+        puts "Phone number (#{contact_method['label']})"
+      end
+      puts "#{contact_method['address']}\n"
+    end
+    puts "\nPress enter to go back"
+    input_line
+  elsif input_text.eql?('X')
+    break
+  end
+end
