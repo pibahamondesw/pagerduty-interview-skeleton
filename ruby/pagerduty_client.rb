@@ -3,6 +3,7 @@
 require 'json'
 require 'net/http'
 require_relative 'http_client'
+require_relative 'helpers'
 
 # PagerDuty Client skeleton for interview
 class PagerdutyClient
@@ -13,17 +14,21 @@ class PagerdutyClient
   class << self
     def get_user(id, include_models = [])
       params = {}
-      include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
-      params.merge({ include: include_models }) if include_models.any?
+      include_models = include_models.select { |x| %w[contact_methods notification_rules teams subdomains].include?(x) }
+      params.merge!({ 'include[]' => include_models }) if include_models.any?
       http_get("users/#{id}", params)
     end
 
     def get_users(limit = 25, offset = 0, include_models = [], query = nil, team_ids = [], total: false)
       params = { limit: limit, offset: offset, total: total }
-      include_models = include_models.select { |x| x.in? %w[contact_methods notification_rules teams subdomains] }
-      params.merge({ include: include_models }) if include_models.any?
-      params.merge({ query: query }) unless query.nil?
-      params.merge({ team_ids: team_ids }) if team_ids.any?
+      if include_models.any?
+        include_models = include_models.select do |x|
+          %w[contact_methods notification_rules teams subdomains].include?(x)
+        end
+        params.merge!({ 'include[]' => include_models })
+      end
+      params.merge!({ query: query }) unless query.nil?
+      params.merge!({ team_ids: team_ids }) if team_ids.any?
       http_get('users', params)
     end
 
@@ -34,12 +39,12 @@ class PagerdutyClient
     def get_escalation_policies(limit = 100, offset = 0, include_models = [], query = nil, sort_by = nil,
                                 team_ids = [], user_ids = [], total: false)
       params = { limit: limit, offset: offset, total: total }
-      include_models = include_models.select { |x| x.in? %w[services teams targets] }
-      params.merge({ include: include_models }) if include_models.any?
-      params.merge({ query: query }) unless query.nil?
-      params.merge({ sort_by: sort_by }) unless sort_by.nil?
-      params.merge({ team_ids: team_ids }) if team_ids.any?
-      params.merge({ user_ids: user_ids }) if user_ids.any?
+      include_models = include_models.select { |x| %w[services teams targets].include?(x) }
+      params.merge!({ 'include[]' => include_models }) if include_models.any?
+      params.merge!({ query: query }) unless query.nil?
+      params.merge!({ sort_by: sort_by }) unless sort_by.nil?
+      params.merge!({ team_ids: team_ids }) if team_ids.any?
+      params.merge!({ user_ids: user_ids }) if user_ids.any?
       http_get('escalation_policies', params)
     end
 
@@ -62,23 +67,23 @@ class PagerdutyClient
                       urgencies = [], user_ids = [], total: false)
       params = { limit: limit, offset: offset, total: total, time_zone: time_zone }
       if date_range.eql?('all')
-        params.merge({ date_range: date_range })
+        params.merge!({ date_range: date_range })
       else
-        params.merge({ since: since_date }) unless since_date.nil?
-        params.merge({ until: until_date }) unless until_date.nil?
+        params.merge!({ since: since_date }) unless since_date.nil?
+        params.merge!({ until: until_date }) unless until_date.nil?
       end
       include_models = include_models.select do |x|
-        x.in? %w[acknowledgers agents assignees conference_bridge escalation_policies first_trigger_log_entries
-                 priorities services teams users]
+        %w[acknowledgers agents assignees conference_bridge escalation_policies first_trigger_log_entries
+           priorities services teams users].include?(x)
       end
-      params.merge({ include: include_models }) if include_models.any?
-      params.merge({ service_ids: service_ids }) if service_ids.any?
-      params.merge({ sort_by: sort_by.slice(0, 1) }) if sort_by.any?
-      statuses = statuses.select { |x| x.in? %w[triggered acknowledged resolved] }
-      params.merge({ statuses: statuses }) if statuses.any?
-      urgencies = urgencies.select { |x| x.in? %w[high low] }
-      params.merge({ urgencies: urgencies }) if urgencies.any?
-      params.merge({ user_ids: user_ids }) if user_ids.any?
+      params.merge!({ 'include[]' => include_models }) if include_models.any?
+      params.merge!({ service_ids: service_ids }) if service_ids.any?
+      params.merge!({ sort_by: sort_by.slice(0, 1) }) if sort_by.any?
+      statuses = statuses.select { |x| %w[triggered acknowledged resolved].include?(x) }
+      params.merge!({ statuses: statuses }) if statuses.any?
+      urgencies = urgencies.select { |x| %w[high low].include?(x) }
+      params.merge!({ urgencies: urgencies }) if urgencies.any?
+      params.merge!({ user_ids: user_ids }) if user_ids.any?
       http_get('incidents', params)
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
